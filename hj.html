@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Speed Test</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #121212; /* Dark background like YouTube */
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .container {
+            background-color: #181818; /* Dark gray container similar to YouTube */
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        h1 {
+            color: #FF0000; /* YouTube's red color */
+            font-size: 3rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+            font-family: 'Roboto Condensed', sans-serif;
+        }
+
+        label {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        select {
+            padding: 12px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            border: 2px solid #444;
+            background-color: #222;
+            color: #fff;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 20px;
+            transition: 0.3s;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #FF0000;
+            background-color: #333;
+        }
+
+        #timer {
+            font-size: 2rem;
+            margin: 20px;
+            color: #FF0000;
+            font-weight: bold;
+        }
+
+        #text-to-type {
+            font-size: 1.2rem;
+            color: #ddd;
+            background-color: #222;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            min-height: 60px;
+            max-height: 200px;
+            overflow-y: auto;
+            text-align: left;
+            white-space: pre-wrap;
+        }
+
+        textarea {
+            width: 100%;
+            font-size: 1.1rem;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #444;
+            background-color: #222;
+            color: #fff;
+            margin-top: 20px;
+            box-sizing: border-box;
+            min-height: 100px;
+            transition: 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #FF0000;
+            background-color: #333;
+        }
+
+        #results {
+            font-size: 1.3rem;
+            margin-top: 30px;
+            font-weight: 600;
+            color: #00FF00; /* Green color for results */
+        }
+
+        .reset-button {
+            background-color: #FF0000;
+            color: #fff;
+            font-size: 1.1rem;
+            padding: 12px 30px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            margin-top: 20px;
+        }
+
+        .reset-button:hover {
+            background-color: #cc0000;
+            transform: scale(1.1);
+        }
+
+        .reset-button:active {
+            transform: scale(1);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px;
+                max-width: 90%;
+            }
+
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            #timer {
+                font-size: 1.8rem;
+            }
+
+            #text-to-type {
+                font-size: 1rem;
+            }
+
+            textarea {
+                font-size: 1rem;
+            }
+
+            #results {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Typing Speed Test</h1>
+        
+        <!-- Time selection dropdown -->
+        <label for="time-select">Select Test Duration:</label>
+        <select id="time-select">
+            <option value="60">1 Minute</option>
+            <option value="120">2 Minutes</option>
+            <option value="180">3 Minutes</option>
+            <option value="240">4 Minutes</option>
+            <option value="300">5 Minutes</option>
+        </select>
+
+        <!-- Timer display -->
+        <div id="timer">Time: 0s</div>
+
+        <!-- Text to type -->
+        <div id="text-to-type"></div>
+
+        <!-- User input area -->
+        <textarea id="user-input" placeholder="Start typing here..." oninput="checkTyping()"></textarea>
+
+        <!-- Results display -->
+        <div id="results"></div>
+
+        <!-- Reset Button -->
+        <button class="reset-button" onclick="initializeTest()">Restart Test</button>
+    </div>
+
+    <script>
+        let startTime, timerInterval, testStarted = false;
+        let totalTime = 0, elapsedTime = 0;
+        let correctWords = 0;
+        let currentLineIndex = 0;
+        let currentText = '';
+        let textLines = [
+            "The quick brown fox jumps over the lazy dog. This sentence contains every letter of the alphabet.",
+            "Typing tests help improve speed and accuracy when typing. Practice makes perfect, and that's the key.",
+            "A programmer’s job is to write code that works. Debugging is a part of the process, and it's a challenge.",
+            "Technology evolves every day, and we must adapt to the changes. Continuous learning is essential for growth.",
+            "Every word typed is a step toward improvement. Accuracy is just as important as speed, if not more so.",
+            "Practice typing every day, and you’ll see improvements in no time. Start slow and focus on precision first.",
+            "Writing code and typing text both require focus and attention. It’s important to understand the task at hand.",
+            "The world of programming is vast, and there are endless possibilities. Learning new skills every day keeps you sharp."
+        ];
+
+        // Start the test when typing begins
+        function startTest() {
+            if (!testStarted) {
+                testStarted = true;
+                startTime = Date.now();
+                timerInterval = setInterval(updateTimer, 1000);
+            }
+        }
+
+        // Update the timer
+        function updateTimer() {
+            if (!testStarted) return;
+            elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+            const remainingTime = totalTime - elapsedTime;
+            document.getElementById("timer").textContent = `Time: ${remainingTime}s`;
+
+            if (remainingTime <= 0) {
+                clearInterval(timerInterval);
+                testStarted = false;
+                document.getElementById("user-input").disabled = true;
+                calculateWPM();
+            }
+        }
+
+        // Calculate the WPM and display results
+        function calculateWPM() {
+            const wpm = (correctWords / totalTime) * 60;
+            document.getElementById("results").textContent = `You typed ${correctWords} words with a speed of ${Math.round(wpm)} words per minute.`;
+        }
+
+        // Check if the user typed correctly
+        function checkTyping() {
+            startTest();
+
+            const userInput = document.getElementById("user-input").value.trim();
+            const currentLine = currentText.split('\n')[0]; // Show one line at a time
+
+            // Check if user typed the correct line
+            if (userInput === currentLine) {
+                correctWords += userInput.split(/\s+/).length; // Count correct words
+                currentLineIndex++;
+
+                if (currentLineIndex < textLines.length) {
+                    currentText = textLines[currentLineIndex]; // Get the next line
+                    document.getElementById("text-to-type").textContent = currentText; // Update the displayed text
+                    document.getElementById("user-input").value = ''; // Clear the input box
+                } else {
+                    // If the text ends, calculate the WPM
+                    calculateWPM();
+                }
+            }
+        }
+
+        // Initialize the test
+        function initializeTest() {
+            totalTime = parseInt(document.getElementById("time-select").value);
+            elapsedTime = 0;
+            correctWords = 0;
+            currentLineIndex = 0;
+            currentText = textLines[currentLineIndex];
+            document.getElementById("text-to-type").textContent = currentText; // Show first line
+            document.getElementById("timer").textContent = `Time: ${totalTime}s`;
+            document.getElementById("user-input").disabled = false;
+            document.getElementById("results").textContent = ''; // Reset the results
+        }
+
+        // Run when the page loads
+        window.onload = function() {
+            initializeTest();
+            document.getElementById("time-select").addEventListener("change", function() {
+                initializeTest();
+            });
+        };
+    </script>
+</body>
+</html>
